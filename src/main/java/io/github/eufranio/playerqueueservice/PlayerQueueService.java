@@ -1,5 +1,6 @@
 package io.github.eufranio.playerqueueservice;
 
+import com.google.common.collect.Lists;
 import com.google.inject.Inject;
 import io.github.eufranio.config.Config;
 import io.github.eufranio.playerqueueservice.api.QueueService;
@@ -15,9 +16,15 @@ import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.game.state.GamePostInitializationEvent;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.service.pagination.PaginationList;
+import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
+import org.spongepowered.api.text.action.TextActions;
+import org.spongepowered.api.text.format.TextColors;
+import org.spongepowered.api.text.serializer.TextSerializers;
 
 import java.io.File;
+import java.util.List;
 
 @Plugin(
         id = "playerqueueservice",
@@ -46,8 +53,22 @@ public class PlayerQueueService {
                 .arguments(GenericArguments.userOrSource(Text.of("player")))
                 .executor((src, args) -> {
                     User user = args.requireOne("player");
-                    Sponge.getServiceManager().provideUnchecked(QueueService.class)
-                            .getInfo(user.getUniqueId())
+
+                    List<Text> info = Lists.newArrayList(Text.of(TextColors.YELLOW, "-- Queued Messages"));
+                    queueService.getQueuedMessages(user.getUniqueId())
+                            .forEach(s -> info.add(Text.of("    ", s)));
+                    info.add(Text.EMPTY);
+                    info.add(Text.of(TextColors.YELLOW, "-- Queued Commands"));
+
+                    Text p = Text.of(TextColors.RED, TextActions.showText(Text.of("As player")), "[p]");
+
+                    queueService.getQueuedCommands(user.getUniqueId()).forEach(cmd -> info.add(
+                            Text.of(cmd.shouldSendAsPlayer() ? p : Text.of("   "), TextColors.GRAY, cmd.getCommand())
+                    ));
+
+                    PaginationList.builder()
+                            .title(Text.of(TextColors.GREEN, user.getName(), "'s Queue"))
+                            .contents(info)
                             .sendTo(src);
                     return CommandResult.success();
                 })

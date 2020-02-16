@@ -11,15 +11,10 @@ import io.github.eufranio.playerqueueservice.api.QueueService;
 import io.github.eufranio.storage.Persistable;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.entity.living.player.Player;
-import org.spongepowered.api.entity.living.player.User;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
-import org.spongepowered.api.service.pagination.PaginationList;
-import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.action.TextActions;
-import org.spongepowered.api.text.format.TextColors;
 import org.spongepowered.api.text.serializer.TextSerializers;
 
 import java.util.ArrayList;
@@ -101,34 +96,6 @@ public class QueueServiceImpl implements QueueService {
         if (queue != null) {
             queue.commands.remove(command.getCommand());
         }
-    }
-
-    @Override
-    public PaginationList getInfo(UUID player) {
-        PlayerQueue queue = this.players.get(player);
-        if (queue == null)
-            return PaginationList.builder()
-                    .title(Text.of(TextColors.GRAY, "No Queue"))
-                    .build();
-
-        List<Text> info = Lists.newArrayList(Text.of(TextColors.YELLOW, "-- Queued Messages"));
-        queue.messages.forEach(s -> info.add(Text.of("    ", TextSerializers.JSON.deserialize(s))));
-        info.add(Text.EMPTY);
-        info.add(Text.of(TextColors.YELLOW, "-- Queued Commands"));
-
-        Text p = Text.of(TextColors.RED, TextActions.showText(Text.of("As player")), "[p]");
-
-        queue.commands.forEach((cmd, asPlayer) -> info.add(
-                Text.of(asPlayer ? p : Text.of("   "), TextColors.GRAY, cmd)
-        ));
-
-        User user = Sponge.getServer().getPlayer(player)
-                .map(User.class::cast)
-                .orElseGet(() -> Sponge.getServiceManager().provideUnchecked(UserStorageService.class).get(player).get());
-        return PaginationList.builder()
-                .title(Text.of(TextColors.GREEN, user.getName(), "'s Queue"))
-                .contents(info)
-                .build();
     }
 
     @Listener

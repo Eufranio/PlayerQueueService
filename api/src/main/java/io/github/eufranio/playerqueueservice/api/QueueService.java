@@ -1,6 +1,5 @@
 package io.github.eufranio.playerqueueservice.api;
 
-import org.spongepowered.api.service.pagination.PaginationList;
 import org.spongepowered.api.text.Text;
 
 import java.util.List;
@@ -21,7 +20,5 @@ public interface QueueService {
     void deleteMessage(UUID player, Text message);
 
     void deleteCommand(UUID player, CommandEntry command);
-
-    PaginationList getInfo(UUID player);
 
 }
