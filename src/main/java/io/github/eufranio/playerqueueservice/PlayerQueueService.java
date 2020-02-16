@@ -17,7 +17,6 @@ import org.spongepowered.api.event.game.state.GamePostInitializationEvent;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.plugin.Plugin;
 import org.spongepowered.api.service.pagination.PaginationList;
-import org.spongepowered.api.service.user.UserStorageService;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.action.TextActions;
 import org.spongepowered.api.text.format.TextColors;
@@ -48,7 +47,36 @@ public class PlayerQueueService {
         Sponge.getEventManager().registerListeners(this, queueService);
         Sponge.getServiceManager().setProvider(this, QueueService.class, queueService);
 
-        CommandSpec queueServiceCommand = CommandSpec.builder()
+        CommandSpec queueMessage = CommandSpec.builder()
+                .permission("playerqueueservice.queue.message")
+                .arguments(
+                        GenericArguments.user(Text.of("player")),
+                        GenericArguments.text(Text.of("text"), TextSerializers.FORMATTING_CODE, true)
+                )
+                .executor((src, args) -> {
+                    User user = args.requireOne("player");
+                    queueService.queueMessage(user.getUniqueId(), args.requireOne("text"));
+                    src.sendMessage(Text.of(TextColors.GREEN, "Successfully queued message!"));
+                    return CommandResult.success();
+                })
+                .build();
+
+        CommandSpec queueCommand = CommandSpec.builder()
+                .permission("playerqueueservice.queue.command")
+                .arguments(
+                        GenericArguments.user(Text.of("player")),
+                        GenericArguments.bool(Text.of("as player")),
+                        GenericArguments.remainingJoinedStrings(Text.of("command"))
+                )
+                .executor((src, args) -> {
+                    User user = args.requireOne("player");
+                    queueService.queueCommand(user.getUniqueId(), args.requireOne("text"), args.requireOne("as player"));
+                    src.sendMessage(Text.of(TextColors.GREEN, "Successfully queued command!"));
+                    return CommandResult.success();
+                })
+                .build();
+
+        CommandSpec queueInfo = CommandSpec.builder()
                 .permission("playerqueueservice.info")
                 .arguments(GenericArguments.userOrSource(Text.of("player")))
                 .executor((src, args) -> {
@@ -73,7 +101,19 @@ public class PlayerQueueService {
                     return CommandResult.success();
                 })
                 .build();
-        Sponge.getCommandManager().register(this, queueServiceCommand, "queueserviceinfo");
+
+        CommandSpec queue = CommandSpec.builder()
+                .permission("playerqueueservice.base")
+                .executor((src, args) -> {
+                    Sponge.getCommandManager().process(src, "queue info");
+                    return CommandResult.success();
+                })
+                .child(queueInfo, "info")
+                .child(queueMessage, "message")
+                .child(queueCommand, "command")
+                .build();
+
+        Sponge.getCommandManager().register(this, queue, "queue");
     }
 
     @ConfigSerializable
