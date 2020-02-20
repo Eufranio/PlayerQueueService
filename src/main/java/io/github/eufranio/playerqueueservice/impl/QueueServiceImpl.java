@@ -114,7 +114,7 @@ public class QueueServiceImpl implements QueueService {
     public static class PlayerQueue extends BaseDaoEnabled<PlayerQueue, UUID> {
 
         @DatabaseField(id = true)
-        private UUID id;
+        public UUID id;
 
         @DatabaseField(dataType = DataType.SERIALIZABLE)
         private ArrayList<String> messages = new ArrayList<>();
