@@ -43,7 +43,7 @@ public class PlayerQueueService {
     public void onPostInit(GamePostInitializationEvent event) {
         Config<MainConfig> config = new Config<>(MainConfig.class, "PlayerQueueService.conf", configDir);
 
-        QueueServiceImpl queueService = new QueueServiceImpl(config.get().databaseUrl);
+        QueueServiceImpl queueService = new QueueServiceImpl(this, config.get().databaseUrl);
         Sponge.getEventManager().registerListeners(this, queueService);
         Sponge.getServiceManager().setProvider(this, QueueService.class, queueService);
 

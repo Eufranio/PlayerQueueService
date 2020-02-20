@@ -6,6 +6,7 @@ import com.j256.ormlite.field.DataType;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.misc.BaseDaoEnabled;
 import com.j256.ormlite.table.DatabaseTable;
+import io.github.eufranio.playerqueueservice.PlayerQueueService;
 import io.github.eufranio.playerqueueservice.api.CommandEntry;
 import io.github.eufranio.playerqueueservice.api.QueueService;
 import io.github.eufranio.storage.Persistable;
@@ -14,6 +15,7 @@ import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.filter.Getter;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
+import org.spongepowered.api.scheduler.Task;
 import org.spongepowered.api.text.Text;
 import org.spongepowered.api.text.serializer.TextSerializers;
 
@@ -26,8 +28,10 @@ import java.util.stream.Collectors;
 public class QueueServiceImpl implements QueueService {
 
     Persistable<PlayerQueue, UUID> players;
+    PlayerQueueService plugin;
 
-    public QueueServiceImpl(String databaseUrl) {
+    public QueueServiceImpl(PlayerQueueService plugin, String databaseUrl) {
+        this.plugin = plugin;
         this.players = Persistable.create(PlayerQueue.class, databaseUrl);
     }
 
@@ -100,14 +104,16 @@ public class QueueServiceImpl implements QueueService {
 
     @Listener
     public void onJoin(ClientConnectionEvent.Join event, @Getter("getTargetEntity") Player p) {
-        PlayerQueue queue = this.players.get(p.getUniqueId());
-        if (queue != null) {
-            queue.commands.forEach((cmd, asPlayer) ->
-                    Sponge.getCommandManager().process(asPlayer ? p : Sponge.getServer().getConsole(), cmd)
-            );
-            queue.messages.forEach(msg -> p.sendMessage(TextSerializers.JSON.deserialize(msg)));
-            this.players.delete(queue);
-        }
+        Task.builder().delayTicks(10).execute(() -> {
+            PlayerQueue queue = this.players.get(p.getUniqueId());
+            if (queue != null) {
+                queue.commands.forEach((cmd, asPlayer) ->
+                        Sponge.getCommandManager().process(asPlayer ? p : Sponge.getServer().getConsole(), cmd)
+                );
+                queue.messages.forEach(msg -> p.sendMessage(TextSerializers.JSON.deserialize(msg)));
+                this.players.delete(queue);
+            }
+        }).submit(plugin);
     }
 
     @DatabaseTable(tableName = "queues")
