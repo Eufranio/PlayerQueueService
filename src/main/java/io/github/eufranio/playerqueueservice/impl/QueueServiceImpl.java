@@ -104,7 +104,7 @@ public class QueueServiceImpl implements QueueService {
 
     @Listener
     public void onJoin(ClientConnectionEvent.Join event, @Getter("getTargetEntity") Player p) {
-        Task.builder().delayTicks(10).execute(() -> {
+        Task.builder().delayTicks(plugin.config.get().delayTicks).execute(() -> {
             PlayerQueue queue = this.players.get(p.getUniqueId());
             if (queue != null) {
                 queue.commands.forEach((cmd, asPlayer) ->

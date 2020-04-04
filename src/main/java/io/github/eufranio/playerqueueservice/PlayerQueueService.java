@@ -13,6 +13,7 @@ import org.spongepowered.api.command.args.GenericArguments;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.ConfigDir;
 import org.spongepowered.api.entity.living.player.User;
+import org.spongepowered.api.event.game.GameReloadEvent;
 import org.spongepowered.api.event.game.state.GamePostInitializationEvent;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.plugin.Plugin;
@@ -39,9 +40,11 @@ public class PlayerQueueService {
     @ConfigDir(sharedRoot = false)
     private File configDir;
 
+    public Config<MainConfig> config;
+
     @Listener
     public void onPostInit(GamePostInitializationEvent event) {
-        Config<MainConfig> config = new Config<>(MainConfig.class, "PlayerQueueService.conf", configDir);
+        config = new Config<>(MainConfig.class, "PlayerQueueService.conf", configDir);
 
         QueueServiceImpl queueService = new QueueServiceImpl(this, config.get().databaseUrl);
         Sponge.getEventManager().registerListeners(this, queueService);
@@ -70,7 +73,7 @@ public class PlayerQueueService {
                 )
                 .executor((src, args) -> {
                     User user = args.requireOne("player");
-                    queueService.queueCommand(user.getUniqueId(), args.requireOne("text"), args.requireOne("as player"));
+                    queueService.queueCommand(user.getUniqueId(), args.requireOne("command"), args.requireOne("as player"));
                     src.sendMessage(Text.of(TextColors.GREEN, "Successfully queued command!"));
                     return CommandResult.success();
                 })
@@ -116,11 +119,19 @@ public class PlayerQueueService {
         Sponge.getCommandManager().register(this, queue, "queue");
     }
 
+    @Listener
+    public void onReload(GameReloadEvent e) {
+        this.config.reload();
+    }
+
     @ConfigSerializable
     public static class MainConfig {
 
         @Setting
         public String databaseUrl = "jdbc:sqlite:PlayerQueueService.db";
+
+        @Setting(comment = "the delay which messages/commands should trigger after login")
+        public int delayTicks = 20;
 
     }
 
